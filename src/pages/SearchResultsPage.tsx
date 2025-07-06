@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -103,6 +103,7 @@ export default function SearchResultsPage() {
   const [filteredTrips, setFilteredTrips] = useState<BusTrip[]>(mockBusTrips);
   const [sortBy, setSortBy] = useState('price');
   const [filterBy, setFilterBy] = useState('all');
+  const navigate = useNavigate();
 
   const from = searchParams.get('from') || 'Departure City';
   const to = searchParams.get('to') || 'Arrival City';
@@ -173,6 +174,10 @@ export default function SearchResultsPage() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleSelectSeats = (tripId: string) => {
+    navigate(`/book/${tripId}/seats`);
   };
 
   return (
@@ -348,7 +353,11 @@ export default function SearchResultsPage() {
                           <div className="text-xs text-muted-foreground">per person</div>
                         </div>
                         
-                        <Button className="w-full" size="lg">
+                        <Button 
+                          className="w-full" 
+                          size="lg"
+                          onClick={() => handleSelectSeats(trip.id)}
+                        >
                           Select Seats
                         </Button>
                         

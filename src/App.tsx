@@ -3,6 +3,7 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
+import SeatSelectionPage from "./pages/SeatSelectionPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import BusOperatorDashboard from "./pages/BusOperatorDashboard";
 import PassengerDashboard from "./pages/PassengerDashboard";
@@ -18,6 +19,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/search-results" element={<SearchResultsPage />} />
+          <Route path="/book/:tripId/seats" element={<SeatSelectionPage />} />
 
           {/* Protected Dashboard Routes */}
           <Route
