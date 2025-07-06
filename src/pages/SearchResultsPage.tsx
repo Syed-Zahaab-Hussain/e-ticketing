@@ -7,100 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Clock, MapPin, Users, Wifi, Coffee, Zap, Star, Filter } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
-
-interface BusTrip {
-  id: string;
-  operatorName: string;
-  operatorLogo?: string;
-  departureTime: string;
-  arrivalTime: string;
-  duration: string;
-  price: number;
-  availableSeats: number;
-  totalSeats: number;
-  busType: string;
-  amenities: string[];
-  rating: number;
-  reviewCount: number;
-}
-
-// Mock data for demonstration
-const mockBusTrips: BusTrip[] = [
-  {
-    id: 'trip-1',
-    operatorName: 'Express Lines',
-    departureTime: '06:00 AM',
-    arrivalTime: '02:30 PM',
-    duration: '8h 30m',
-    price: 89,
-    availableSeats: 12,
-    totalSeats: 45,
-    busType: 'AC Sleeper',
-    amenities: ['wifi', 'charging', 'meals'],
-    rating: 4.5,
-    reviewCount: 234
-  },
-  {
-    id: 'trip-2',
-    operatorName: 'Comfort Travel',
-    departureTime: '08:30 AM',
-    arrivalTime: '05:15 PM',
-    duration: '8h 45m',
-    price: 75,
-    availableSeats: 8,
-    totalSeats: 40,
-    busType: 'AC Semi-Sleeper',
-    amenities: ['wifi', 'charging'],
-    rating: 4.2,
-    reviewCount: 156
-  },
-  {
-    id: 'trip-3',
-    operatorName: 'Premium Coach',
-    departureTime: '10:00 AM',
-    arrivalTime: '07:00 PM',
-    duration: '9h 00m',
-    price: 120,
-    availableSeats: 15,
-    totalSeats: 35,
-    busType: 'Luxury AC',
-    amenities: ['wifi', 'charging', 'meals', 'entertainment'],
-    rating: 4.8,
-    reviewCount: 89
-  },
-  {
-    id: 'trip-4',
-    operatorName: 'Budget Express',
-    departureTime: '11:30 AM',
-    arrivalTime: '08:45 PM',
-    duration: '9h 15m',
-    price: 55,
-    availableSeats: 20,
-    totalSeats: 50,
-    busType: 'AC Seater',
-    amenities: ['charging'],
-    rating: 3.9,
-    reviewCount: 312
-  },
-  {
-    id: 'trip-5',
-    operatorName: 'Night Rider',
-    departureTime: '11:00 PM',
-    arrivalTime: '07:30 AM',
-    duration: '8h 30m',
-    price: 95,
-    availableSeats: 6,
-    totalSeats: 42,
-    busType: 'AC Sleeper',
-    amenities: ['wifi', 'charging', 'blanket'],
-    rating: 4.3,
-    reviewCount: 178
-  }
-];
+import { getSearchResults, type BusTripSearchResult } from '@/lib/mock-trips';
 
 export default function SearchResultsPage() {
   const [searchParams] = useSearchParams();
-  const [filteredTrips, setFilteredTrips] = useState<BusTrip[]>(mockBusTrips);
+  const [filteredTrips, setFilteredTrips] = useState<BusTripSearchResult[]>([]);
   const [sortBy, setSortBy] = useState('price');
   const [filterBy, setFilterBy] = useState('all');
   const navigate = useNavigate();
@@ -110,47 +21,10 @@ export default function SearchResultsPage() {
   const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    let trips = [...mockBusTrips];
-
-    // Apply filters
-    if (filterBy !== 'all') {
-      switch (filterBy) {
-        case 'ac':
-          trips = trips.filter(trip => trip.busType.includes('AC'));
-          break;
-        case 'sleeper':
-          trips = trips.filter(trip => trip.busType.includes('Sleeper'));
-          break;
-        case 'wifi':
-          trips = trips.filter(trip => trip.amenities.includes('wifi'));
-          break;
-      }
-    }
-
-    // Apply sorting
-    switch (sortBy) {
-      case 'price':
-        trips.sort((a, b) => a.price - b.price);
-        break;
-      case 'duration':
-        trips.sort((a, b) => {
-          const aDuration = parseInt(a.duration.split('h')[0]) * 60 + parseInt(a.duration.split('h')[1]);
-          const bDuration = parseInt(b.duration.split('h')[0]) * 60 + parseInt(b.duration.split('h')[1]);
-          return aDuration - bDuration;
-        });
-        break;
-      case 'departure':
-        trips.sort((a, b) => {
-          const aTime = new Date(`2000-01-01 ${a.departureTime}`).getTime();
-          const bTime = new Date(`2000-01-01 ${b.departureTime}`).getTime();
-          return aTime - bTime;
-        });
-        break;
-      case 'rating':
-        trips.sort((a, b) => b.rating - a.rating);
-        break;
-    }
-
+    const trips = getSearchResults({
+      sortBy: sortBy as 'price' | 'duration' | 'departure' | 'rating',
+      filterBy: filterBy as 'all' | 'ac' | 'sleeper' | 'wifi'
+    });
     setFilteredTrips(trips);
   }, [sortBy, filterBy]);
 
@@ -177,7 +51,9 @@ export default function SearchResultsPage() {
   };
 
   const handleSelectSeats = (tripId: string) => {
-    navigate(`/book/${tripId}/seats`);
+    // Pass the search parameters along to maintain context
+    const seatSelectionUrl = `/book/${tripId}/seats?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`;
+    navigate(seatSelectionUrl);
   };
 
   return (

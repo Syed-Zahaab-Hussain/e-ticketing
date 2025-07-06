@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,25 +20,7 @@ import {
   User
 } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
-
-interface BusTrip {
-  id: string;
-  operatorName: string;
-  departureTime: string;
-  arrivalTime: string;
-  duration: string;
-  price: number;
-  availableSeats: number;
-  totalSeats: number;
-  busType: string;
-  amenities: string[];
-  rating: number;
-  reviewCount: number;
-  from: string;
-  to: string;
-  date: string;
-  boardingPoints: string[];
-}
+import { getTripById, type BusTripDetails } from '@/lib/mock-trips';
 
 interface Seat {
   id: string;
@@ -50,33 +32,8 @@ interface Seat {
   price: number;
 }
 
-// Mock data - in real app, this would come from API
-const mockTrip: BusTrip = {
-  id: 'trip-1',
-  operatorName: 'Express Lines',
-  departureTime: '06:00 AM',
-  arrivalTime: '02:30 PM',
-  duration: '8h 30m',
-  price: 89,
-  availableSeats: 12,
-  totalSeats: 45,
-  busType: 'AC Sleeper',
-  amenities: ['wifi', 'charging', 'meals'],
-  rating: 4.5,
-  reviewCount: 234,
-  from: 'New York',
-  to: 'Los Angeles',
-  date: '2024-01-15',
-  boardingPoints: [
-    'Port Authority Bus Terminal - 625 8th Ave',
-    'Penn Station - 4 Pennsylvania Plaza',
-    'Grand Central Terminal - 89 E 42nd St',
-    'Brooklyn Bridge Terminal - 130 Livingston St'
-  ]
-};
-
 // Generate mock seat layout
-const generateSeatLayout = (totalSeats: number, bookedSeats: string[] = []): Seat[] => {
+const generateSeatLayout = (totalSeats: number, price: number, bookedSeats: string[] = []): Seat[] => {
   const seats: Seat[] = [];
   const seatsPerRow = 4; // 2 on left, 2 on right
   const rows = Math.ceil(totalSeats / seatsPerRow);
@@ -95,7 +52,7 @@ const generateSeatLayout = (totalSeats: number, bookedSeats: string[] = []): Sea
         position: pos <= 2 ? 'left' : 'right',
         type: 'regular',
         status: bookedSeats.includes(seatNumber) ? 'booked' : 'available',
-        price: mockTrip.price
+        price
       });
     }
   }
@@ -105,35 +62,59 @@ const generateSeatLayout = (totalSeats: number, bookedSeats: string[] = []): Sea
 
 export default function SeatSelectionPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [trip, setTrip] = useState<BusTrip | null>(null);
+  const [trip, setTrip] = useState<BusTripDetails | null>(null);
   const [seats, setSeats] = useState<Seat[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [selectedBoardingPoint, setSelectedBoardingPoint] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Get search context from URL parameters
+  const from = searchParams.get('from') || 'Departure City';
+  const to = searchParams.get('to') || 'Arrival City';
+  const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+
   useEffect(() => {
-    // Simulate API call to fetch trip details and seat layout
+    // Fetch trip details and seat layout
     const fetchTripData = async () => {
       setIsLoading(true);
       try {
-        // In real app, fetch trip by tripId from API
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
+        if (!tripId) {
+          throw new Error('Trip ID not provided');
+        }
+
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
+        const tripDetails = getTripById(tripId);
+        if (!tripDetails) {
+          throw new Error('Trip not found');
+        }
+
+        // Use dynamic from/to/date from search params, but other details from trip data
+        const tripWithSearchContext = {
+          ...tripDetails,
+          from,
+          to,
+          date
+        };
+
         const bookedSeats = ['1A', '1B', '2C', '3A', '4D', '5B', '6A', '7C']; // Mock booked seats
-        const seatLayout = generateSeatLayout(mockTrip.totalSeats, bookedSeats);
+        const seatLayout = generateSeatLayout(tripDetails.totalSeats, tripDetails.price, bookedSeats);
         
-        setTrip(mockTrip);
+        setTrip(tripWithSearchContext);
         setSeats(seatLayout);
       } catch (error) {
         console.error('Error fetching trip data:', error);
+        navigate('/search-results');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchTripData();
-  }, [tripId]);
+  }, [tripId, from, to, date, navigate]);
 
   const handleSeatClick = (seatId: string) => {
     const seat = seats.find(s => s.id === seatId);
@@ -195,17 +176,20 @@ export default function SeatSelectionPage() {
   };
 
   const handleProceedToBooking = () => {
-    if (selectedSeats.length === 0 || !selectedBoardingPoint) return;
+    if (selectedSeats.length === 0 || !selectedBoardingPoint || !tripId) return;
     
-    // Navigate to passenger details page with selected seats and boarding point
-    const searchParams = new URLSearchParams({
-      tripId: tripId || '',
+    // Navigate to passenger details page with all necessary data
+    const searchParamsForBooking = new URLSearchParams({
+      tripId,
       seats: selectedSeats.join(','),
       totalPrice: calculateTotalPrice().toString(),
-      boardingPoint: selectedBoardingPoint
+      boardingPoint: selectedBoardingPoint,
+      from,
+      to,
+      date
     });
     
-    navigate(`/book/passenger-details?${searchParams.toString()}`);
+    navigate(`/book/passenger-details?${searchParamsForBooking.toString()}`);
   };
 
   if (isLoading) {
@@ -248,7 +232,7 @@ export default function SeatSelectionPage() {
         {/* Header */}
         <div className="mb-8">
           <Link 
-            to="/search-results" 
+            to={`/search-results?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`}
             className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-4 group"
           >
             <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
