@@ -1,0 +1,100 @@
+For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+
+By default, this template supports JSX syntax with Tailwind CSS classes, the shadcn/ui library, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+
+Use icons from lucide-react for logos.
+
+
+You are building a full-stack web application named **E-Ticketing for Bus** ("E-Ticket"), designed for a single bus company (or multiple operators in the future) to manage online bus ticket booking and operations. Passengers can conveniently book, manage, and cancel their journeys via a responsive website. The system includes the following roles: **Admin**, **Bus Operator**, and **Passenger**.
+
+Tech Stack:
+
+- Frontend: React.js, ShadCN UI, Axios, React Query, React Router DOM
+- Backend: Express.js, Prisma ORM, PostgreSQL
+- Payments: Stripe
+- Notifications: Email or SMS
+- Ticket Validation: QR codes or digital tickets
+
+Project Scope:
+Create a modern, user-friendly ticket booking platform for passengers, a dashboard for admins, and tools for bus operators to manage schedules, buses, and real-time operations.
+
+Functional Roles and Features:
+
+---
+
+**Admin**
+
+- Super-admin role to oversee the platform
+- Add/edit/remove bus operators
+- Add/edit routes and schedules
+- View all passenger data, bookings, and revenue analytics
+- Manage system-wide settings, pricing rules, and refund policies
+- Full access to all data, including across operators
+- View and export platform-wide financial reports
+
+---
+
+**Bus Operator**
+A distinct role designed for operational staff responsible for managing buses, routes, and schedules. Operators have access to their assigned data only.
+
+**Features:**
+
+- Assign buses to specific routes
+- Add/edit route schedules (departure times, frequencies, seats)
+- Add/update bus fleet information (bus number, capacity, amenities, driver name, etc.)
+- Monitor ticket sales per route or bus
+- View available seats and real-time bookings
+- View passenger manifests per trip
+- Track QR validation and check-in activity
+- Log disruptions, delays, or maintenance events
+- (Optional) Assign drivers to trips
+- (Optional) Message passengers via dashboard (e.g., delay alerts)
+
+---
+
+**Passenger**
+Users who book tickets and manage their journeys.
+
+**Features:**
+
+- Search and book bus tickets by selecting:
+  - Departure city
+  - Arrival city
+  - Travel date
+  - Seat preference
+- Secure online payments via Stripe
+- Receive QR code or digital ticket for entry validation
+- View and manage past/upcoming bookings
+- Reschedule tickets (change date or departure time if available)
+- Cancel bookings and receive refund via Stripe
+- Get email or SMS notifications for:
+  - Booking confirmation
+  - Cancellations/refunds
+  - Schedule changes or delays
+
+---
+
+**Ticket Cancellation & Rescheduling Logic**
+
+- Users can cancel or modify bookings from their dashboard
+- On cancellation:
+  - Mark ticket as canceled in DB
+  - Trigger Stripe refund
+  - Send confirmation via email/SMS
+- On reschedule:
+  - Allow changing date/time
+  - Update DB and regenerate QR code
+  - Notify passenger with new ticket details
+
+---
+
+Out of Scope:
+
+- Physical ticket printing or POS systems
+- Support for other transport modes (train, flight, metro)
+- Integration with travel agents or third-party booking platforms
+
+---
+
+Objective:
+Build a scalable, user-friendly, and operator-ready bus e-ticketing platform.
