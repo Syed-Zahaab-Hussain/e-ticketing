@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -14,7 +16,6 @@ import {
   Wifi, 
   Coffee, 
   Zap,
-  CheckCircle,
   AlertCircle,
   User
 } from 'lucide-react';
@@ -36,6 +37,7 @@ interface BusTrip {
   from: string;
   to: string;
   date: string;
+  boardingPoints: string[];
 }
 
 interface Seat {
@@ -43,7 +45,7 @@ interface Seat {
   number: string;
   row: number;
   position: 'left' | 'right' | 'aisle';
-  type: 'regular' | 'premium' | 'sleeper';
+  type: 'regular';
   status: 'available' | 'booked' | 'selected';
   price: number;
 }
@@ -64,7 +66,13 @@ const mockTrip: BusTrip = {
   reviewCount: 234,
   from: 'New York',
   to: 'Los Angeles',
-  date: '2024-01-15'
+  date: '2024-01-15',
+  boardingPoints: [
+    'Port Authority Bus Terminal - 625 8th Ave',
+    'Penn Station - 4 Pennsylvania Plaza',
+    'Grand Central Terminal - 89 E 42nd St',
+    'Brooklyn Bridge Terminal - 130 Livingston St'
+  ]
 };
 
 // Generate mock seat layout
@@ -85,9 +93,9 @@ const generateSeatLayout = (totalSeats: number, bookedSeats: string[] = []): Sea
         number: seatNumber,
         row,
         position: pos <= 2 ? 'left' : 'right',
-        type: row <= 3 ? 'premium' : 'regular',
+        type: 'regular',
         status: bookedSeats.includes(seatNumber) ? 'booked' : 'available',
-        price: row <= 3 ? mockTrip.price + 15 : mockTrip.price
+        price: mockTrip.price
       });
     }
   }
@@ -101,6 +109,7 @@ export default function SeatSelectionPage() {
   const [trip, setTrip] = useState<BusTrip | null>(null);
   const [seats, setSeats] = useState<Seat[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [selectedBoardingPoint, setSelectedBoardingPoint] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -186,13 +195,14 @@ export default function SeatSelectionPage() {
   };
 
   const handleProceedToBooking = () => {
-    if (selectedSeats.length === 0) return;
+    if (selectedSeats.length === 0 || !selectedBoardingPoint) return;
     
-    // Navigate to passenger details page with selected seats
+    // Navigate to passenger details page with selected seats and boarding point
     const searchParams = new URLSearchParams({
       tripId: tripId || '',
       seats: selectedSeats.join(','),
-      totalPrice: calculateTotalPrice().toString()
+      totalPrice: calculateTotalPrice().toString(),
+      boardingPoint: selectedBoardingPoint
     });
     
     navigate(`/book/passenger-details?${searchParams.toString()}`);
@@ -249,7 +259,7 @@ export default function SeatSelectionPage() {
             Select Your Seats
           </h1>
           <p className="text-muted-foreground">
-            Choose your preferred seats for your journey
+            Choose your preferred seats and boarding point for your journey
           </p>
         </div>
 
@@ -283,6 +293,32 @@ export default function SeatSelectionPage() {
                     <div className="text-lg font-bold">{trip.arrivalTime}</div>
                     <div className="text-sm text-muted-foreground">{trip.to}</div>
                   </div>
+                </div>
+
+                <Separator />
+
+                {/* Boarding Point Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="boarding-point" className="text-sm font-medium">
+                    Select Boarding Point
+                  </Label>
+                  <Select value={selectedBoardingPoint} onValueChange={setSelectedBoardingPoint}>
+                    <SelectTrigger id="boarding-point">
+                      <SelectValue placeholder="Choose your boarding location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {trip.boardingPoints.map((point, index) => (
+                        <SelectItem key={index} value={point}>
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{point.split(' - ')[0]}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {point.split(' - ')[1]}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Separator />
@@ -345,10 +381,6 @@ export default function SeatSelectionPage() {
                   <div className="w-6 h-6 rounded border-2 border-muted bg-muted opacity-60"></div>
                   <span className="text-sm">Booked</span>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-6 h-6 rounded border-2 border-accent bg-accent/20"></div>
-                  <span className="text-sm">Premium (+$15)</span>
-                </div>
               </CardContent>
             </Card>
 
@@ -369,6 +401,18 @@ export default function SeatSelectionPage() {
                       ))}
                     </div>
                   </div>
+
+                  {selectedBoardingPoint && (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-2">Boarding Point</div>
+                      <div className="text-sm font-medium">
+                        {selectedBoardingPoint.split(' - ')[0]}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {selectedBoardingPoint.split(' - ')[1]}
+                      </div>
+                    </div>
+                  )}
                   
                   <Separator />
                   
@@ -387,6 +431,7 @@ export default function SeatSelectionPage() {
                     className="w-full" 
                     size="lg"
                     onClick={handleProceedToBooking}
+                    disabled={selectedSeats.length === 0 || !selectedBoardingPoint}
                   >
                     <User className="h-4 w-4 mr-2" />
                     Enter Passenger Details
@@ -436,7 +481,7 @@ export default function SeatSelectionPage() {
                               key={seat.id}
                               className={getSeatClassName(seat)}
                               onClick={() => handleSeatClick(seat.id)}
-                              title={`Seat ${seat.number} - $${seat.price} ${seat.type === 'premium' ? '(Premium)' : ''}`}
+                              title={`Seat ${seat.number} - $${seat.price}`}
                             >
                               {seat.number.slice(-1)}
                             </div>
@@ -455,7 +500,7 @@ export default function SeatSelectionPage() {
                               key={seat.id}
                               className={getSeatClassName(seat)}
                               onClick={() => handleSeatClick(seat.id)}
-                              title={`Seat ${seat.number} - $${seat.price} ${seat.type === 'premium' ? '(Premium)' : ''}`}
+                              title={`Seat ${seat.number} - $${seat.price}`}
                             >
                               {seat.number.slice(-1)}
                             </div>
@@ -464,15 +509,6 @@ export default function SeatSelectionPage() {
                       </div>
                     );
                   })}
-                </div>
-
-                {/* Premium Section Indicator */}
-                <div className="mt-6 p-3 bg-accent/10 rounded-lg border border-accent/20">
-                  <div className="flex items-center space-x-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-accent" />
-                    <span className="font-medium">Premium Section</span>
-                    <span className="text-muted-foreground">- Rows 1-3 include extra legroom and priority boarding (+$15)</span>
-                  </div>
                 </div>
               </CardContent>
             </Card>
